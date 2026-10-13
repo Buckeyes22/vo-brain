@@ -1,0 +1,12 @@
+[Unit]
+Description=Safely reconcile registered brain consuming vaults with canonical Git
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/brain-curator/doclayer/.venv/bin/brain-vault-sync --config %h/.config/brain-vault-sync/consumers.json
+TimeoutStartSec=300
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true

@@ -1,0 +1,17 @@
+# Agent runtime state — never canonical
+.runtime/
+# doclayer Python package: never commit venvs or bytecode
+.venv/
+__pycache__/
+# Obsidian local UI state (keep the rest of .obsidian if you choose to commit it)
+.obsidian/workspace*
+.obsidian/cache
+.trash/
+# OS noise
+.DS_Store
+# Python tool caches and build output
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/

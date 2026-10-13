@@ -1,0 +1,69 @@
+# Fictional-fleet local evidence profiles for tests (install with the
+# `local_profiles` fixture in conftest.py).
+#
+# Behaviors covered, and the profile that exercises each:
+#   first match wins, in order ........... app-runbook before example-app,
+#                                          desktop-osk/accessibility before desktop
+#   conjunctive `require` ................ desktop-crash
+#   `stop` profile ....................... unrelated-analytics
+#   `always_local` profile ............... curator, code-search
+#   `local_need_terms` ................... svc1 / analytics
+#
+# Fictional fleet: ws1 (workstation), app1 (app + GPU VM), gpu1, svc1
+# (services), worker1 (curator/gap worker host), nas1. Fictional projects:
+# example-app, example-cms.
+
+local_need_terms: '\b(svc1|analytics)\b'
+
+profiles:
+  - name: gpu-capture
+    match: ['\bgpu1\b']
+
+  - name: network-controller
+    match: ['\b(network controller|netctl)\b']
+
+  - name: search-stack
+    match: ['\b(search[- ]stack|metasearch)\b']
+
+  - name: desktop-crash
+    match: ['\b(logouts?|freezes?|crash(es)?|graphics drivers?)\b']
+    require: ['\b(ws1|desktop|workstation|gnome)\b']
+
+  - name: desktop-osk
+    match: ['\b(osk|on-screen keyboard)\b']
+
+  - name: accessibility
+    match: ['\b(orca|at-spi|accessibility)\b']
+
+  - name: example-cms
+    match: ['\bexample[- ]cms\b']
+
+  - name: metrics
+    match: ['\b(metrics|grafana)\b']
+
+  - name: app-runbook
+    match: ['\b(rollout|health checks?)\b']
+
+  - name: example-app
+    match: ['\bexample[- ]app\b']
+
+  - name: unrelated-analytics
+    match: ['\banalytics\b']
+    stop: true
+
+  - name: desktop
+    match: ['\b(desktop|workstation|gnome)\b']
+
+  - name: code-search
+    match: ['\bcode[- ]search\b']
+    always_local: true
+
+  - name: app-docs
+    match: ['\bapp docs\b']
+
+  - name: app-host
+    match: ['\b(app1|gpu vm)\b']
+
+  - name: curator
+    match: ['\b(brain|curator|worker1|gap worker|vault propagation)\b']
+    always_local: true

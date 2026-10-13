@@ -1,0 +1,12 @@
+[Unit]
+Description=Owning documentation-demand worker (shared brain gap ledger)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/git/brain-curator/doclayer
+Environment=DOC_LAYER_GAP_OWNER=local
+Environment=BRAIN_CURATOR_LOCAL=1
+ExecStart=%h/git/brain-curator/doclayer/.venv/bin/doclayer-gap-worker --once
+TimeoutStartSec=8h
+NoNewPrivileges=yes

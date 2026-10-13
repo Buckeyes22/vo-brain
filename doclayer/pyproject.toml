@@ -1,0 +1,75 @@
+[project]
+name = "doclayer"
+version = "0.1.0"
+description = "The brain's doc layer: doc fetcher, resolver, and live checks"
+readme = "README.md"
+license = "MIT"
+authors = [{name = "LateApex LLC"}]
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.27,<1",
+    "beautifulsoup4>=4.12,<5",
+    "markdownify>=0.13,<1",
+    "pyyaml>=6.0,<7",
+    "mcp>=1.12,<2",
+    "pypdf>=5.0,<7",
+]
+
+[project.urls]
+Repository = "https://github.com/Buckeyes22/vo-brain"
+
+[project.scripts]
+doclayer-gap-ops = "doclayer.gap_ops:main"
+doclayer-fetch = "doclayer.fetch:main"
+doclayer-mcp = "doclayer.mcp_server:main"
+doclayer-nudge = "doclayer.nudge:main"
+doclayer-gaps = "doclayer.gaps_cli:main"
+doclayer-gap-worker = "doclayer.gap_worker:main"
+brain-curator = "doclayer.curator.cli:main"
+brain-curator-worker = "doclayer.curator.worker:main"
+brain-curator-mcp = "doclayer.curator.mcp_server:main"
+brain-vault-sync = "doclayer.vault_sync:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-asyncio>=1.2,<2",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/doclayer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.lint.per-file-ignores]
+# Fixtures shared across test modules are imported by name (pytest has no other
+# cross-module fixture hook short of conftest) and then re-declared as test
+# parameters, which F811 reports as a redefinition. Listed per file, not globbed,
+# so a real redefinition elsewhere in tests/ is still caught.
+"tests/test_applicability.py" = ["F811"]
+"tests/test_candidate_host_filter.py" = ["F811"]
+"tests/test_gap_suppress_verify_guards.py" = ["F811"]
+"tests/test_gap_worker.py" = ["F811"]
+"tests/test_private_partial_and_supersede.py" = ["F811"]
+"tests/test_query_derived_platform_scopes.py" = ["F811"]
+"tests/test_resolver_joint_scope.py" = ["F811"]
+"tests/test_semantic_quantity_intent.py" = ["F811"]
+"tests/test_verification_candidates.py" = ["F811"]
+"tests/test_verification_closed_gaps.py" = ["F811"]
+"tests/test_verification_quotes.py" = ["F811"]
+"tests/test_verification_stuck.py" = ["F811"]
+"tests/test_verify_chunking.py" = ["F811"]

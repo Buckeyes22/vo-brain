@@ -1,0 +1,11 @@
+[Unit]
+Description=Deliver the local gap outbox to the worker host every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=15s
+Unit=doclayer-gap-worker.service
+
+[Install]
+WantedBy=timers.target

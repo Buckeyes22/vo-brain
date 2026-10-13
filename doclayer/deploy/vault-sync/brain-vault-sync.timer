@@ -1,0 +1,11 @@
+[Unit]
+Description=Periodically reconcile brain consumers regardless of publisher
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+RandomizedDelaySec=10
+Persistent=true
+Unit=brain-vault-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+{
+  "consumers": [
+    {
+      "repo": "/srv/consumer/brain-vault",
+      "remote": "https://git.example.org/example/brain",
+      "branch": "main",
+      "state": "/srv/consumer/state/brain-vault-sync/consumer.json"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+# Local evidence profiles: example for a fictional fleet.
+#
+# Copy to ~/.config/doclayer/local-profiles.yaml (or point the local_profiles_path
+# setting at your copy). Without this file no profile matches, and only the
+# built-in private-question rules decide whether a need is local.
+#
+# Profiles tell the gap worker which knowledge gaps need local evidence (read
+# from your own hosts) rather than public documentation. Local needs are parked
+# for direct authoring. For a gap, profiles are checked in order and the first
+# one whose `match` patterns hit the gap's subject and question is selected.
+#
+# Each profile has:
+#   - `name` (unique) and `match` (one or more regexes, case-insensitive);
+#   - optional `require`: regexes that must all match as well;
+#   - optional `stop: true`: a matching question gets no profile;
+#   - optional `always_local: true`: a matching question always needs local
+#     evidence, even when it does not mention installation or configuration.
+# A selected profile makes the need local when the question also asks about
+# installation, deployment, configuration or similar.
+#
+# The keys `documents`, `observations` and `sections` (in a profile) and
+# `context` (at the top level) are not supported; the loader rejects them by name.
+#
+# Fictional fleet: ws1 (workstation), app1 (app + GPU VM), gpu1, svc1
+# (services), worker1 (curator/gap worker host), nas1.
+# Fictional projects: example-app, example-cms.
+
+# Optional. A regex for words that make a question local even when no profile
+# matches, provided the question also asks about installation, deployment,
+# configuration or similar.
+local_need_terms: '\b(svc1|nas1)\b'
+
+profiles:
+  - name: gpu-capture
+    match: ['\bgpu1\b']
+
+  - name: search-stack
+    match: ['\b(search[- ]stack|metasearch)\b']
+
+  # `require` patterns must all match as well: crash questions about the
+  # workstation only, not about any crash.
+  - name: desktop-crash
+    match: ['\b(logouts?|freezes?|crash(es)?|graphics drivers?)\b']
+    require: ['\b(ws1|desktop|workstation|gnome)\b']
+
+  - name: example-cms
+    match: ['\bexample[- ]cms\b']
+
+  - name: example-app
+    match: ['\bexample[- ]app\b']
+
+  # `stop`: a matching question gets no profile, so profiles further down
+  # (here `desktop`) cannot claim it.
+  - name: unrelated-analytics
+    match: ['\banalytics\b']
+    stop: true
+
+  - name: desktop
+    match: ['\b(desktop|workstation|gnome)\b']
+
+  # `always_local`: questions matching this profile always need local
+  # evidence, even when they do not mention installation or configuration.
+  - name: curator
+    match: ['\b(brain|curator|worker1|gap worker)\b']
+    always_local: true

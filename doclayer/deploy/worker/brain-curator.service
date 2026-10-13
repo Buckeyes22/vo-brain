@@ -1,0 +1,39 @@
+# brain-curator.service — systemd USER unit on the worker host (e.g. worker1).
+#
+# The worker reads the durable filesystem queue and survives restarts; jobs
+# never depend on a submitting client's connection. Install with the deploy
+# script (doclayer/deploy/worker/deploy.sh); it daemon-reloads and restarts.
+#
+# Foreground worker under systemd (Restart=on-failure): no ad-hoc detached
+# SSH processes. Journal logging only — the worker never logs request
+# contents or secrets.
+
+[Unit]
+Description=brain wiki curator worker (durable import queue)
+Documentation=file://%h/git/brain-curator/docs/curator.md
+# Start after the network is up so inference + Forgejo are reachable.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/git/brain-curator/doclayer/.venv/bin/brain-curator-worker --poll-interval 10
+Restart=on-failure
+RestartSec=10
+# A stopped worker keeps its queue on disk; startup reclaims orphaned jobs.
+TimeoutStopSec=120
+KillSignal=SIGTERM
+
+# Environment: config is read from ~/.config/brain-curator/config.yaml.
+# Credentials come from ~/.config/brain-curator/credentials.env (chmod 600),
+# read by the worker itself — never passed on a command line.
+Environment=HOME=%h
+WorkingDirectory=%h/git/brain-curator
+
+# Safe hardening subset for a user-level service whose job is to read/write
+# its own home directories and talk to LAN services.
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=default.target

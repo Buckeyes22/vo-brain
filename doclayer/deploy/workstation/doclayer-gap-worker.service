@@ -1,0 +1,9 @@
+[Unit]
+Description=Deliver local documentation-demand outbox to the worker host
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/brain/doclayer/.venv/bin/doclayer-gaps flush
+# a failed flush never becomes a restart storm: it logs and exits, and the timer retries
+SuccessExitStatus=0

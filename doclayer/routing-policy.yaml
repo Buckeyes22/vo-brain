@@ -1,0 +1,119 @@
+# Selective routing policy for the brain doc layer.
+#
+# The coverage catalog is DERIVED from committed pages (product:/title:/aliases:
+# frontmatter, subject_type, committed sources/<product>/ copies). This policy
+# adds what cannot be derived: explicit aliases people actually type,
+# subject-to-source relationships (public documentation roots, live-check
+# names), documented facets, exclusions, and overrides. It is not a manual
+# inventory of pages: subjects without a committed page are ignored (policy
+# can never fabricate local coverage), and SSH host aliases are learned from
+# the ssh configuration, cached separately.
+#
+# Bump `version` when policy meaning changes: catalogs and negative-cache
+# entries are bound to it.
+
+version: 2
+
+subjects:
+  # The demo vault's subjects. A policy subject binds the committed page whose
+  # file stem equals its slug.
+  example-app-deployment:
+    kind: service
+    title: Example app
+    aliases:
+      - "example app"
+      - "example-app"
+    facets: [deployment, configuration, rollout]
+
+  search-stack:
+    kind: service
+    aliases:
+      - "search stack"
+      - "metasearch"
+    facets: [deployment, configuration]
+
+  example-cli:
+    kind: product
+    aliases:
+      - "example cli"
+    facets: [configuration]
+
+  fleet-hosts:
+    kind: host-inventory
+    aliases:
+      - "fleet hosts"
+    facets: [hosts, addresses]
+
+  # Subjects that bind the shipped fetch recipe (doclayer/recipes/) and the
+  # implemented live checks (doclayer/livechecks.py). The demo vault has no page
+  # for them, so they stay listed with page_status "policy" until one is
+  # committed; they never count as coverage.
+  alibaba-model-studio:
+    kind: product
+    aliases:
+      - "alibaba model studio"
+      - "model studio"
+    facets: [api, models, pricing, account-plan]
+    public_docs:
+      base_url: "https://www.alibabacloud.com/help/en/model-studio/"
+
+  token-plan:
+    kind: account
+    aliases:
+      - "token plan"
+    facets: [account-plan, quotas, endpoints]
+    related: [alibaba-model-studio]
+    live_checks: [token-plan-endpoint]
+
+  litellm-gateway:
+    kind: service
+    aliases:
+      - "litellm"
+    facets: [deployment, routing, quota]
+    live_checks: [litellm-container]
+
+  vo-rag:
+    kind: service
+    aliases:
+      - "vo rag"
+    facets: [deployment, api, collections]
+    live_checks: [vo-rag-api, vo-rag-release, vo-rag-brain-collection]
+
+hosts:
+  # Extra known hosts beyond the ssh configuration (which is cached
+  # separately and always consulted). Presence here means "known host",
+  # never "documented": coverage stays whatever committed pages say.
+  worker1: {}
+  ws1: {}
+  app1: {}
+  gpu1: {}
+  svc1: {}
+  nas1: {}
+
+exclusions:
+  # Page stems that never become routable subjects.
+  - welcome
+  - index
+
+# Projects too new to document. A question naming one (slug, alias or folder)
+# gets a pointer to its folder and records no knowledge gap. Delete the entry
+# once the project has something worth documenting.
+early_projects:
+  example-project:
+    aliases: ["example project", "example-proj"]
+    path: ~/projects/example-project
+
+# Documentation-need signals tuned per deployment. The built-in deterministic
+# list stays in doclayer.routing; entries here are additional phrases.
+docs_need_phrases: []
+
+# Subjects whose questions are local-environment questions even though the
+# subject also has public documentation (public docs stay attributed and
+# available, but the route leads with local committed facts).
+local_first:
+  - example-app-deployment
+  - search-stack
+  - fleet-hosts
+  - token-plan
+  - litellm-gateway
+  - vo-rag

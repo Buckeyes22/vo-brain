@@ -1,0 +1,11 @@
+[Unit]
+Description=Process shared documentation needs every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=5min
+AccuracySec=15s
+Unit=doclayer-gap-worker.service
+
+[Install]
+WantedBy=timers.target

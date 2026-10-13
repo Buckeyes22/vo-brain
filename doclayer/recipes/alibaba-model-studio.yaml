@@ -1,0 +1,20 @@
+product: alibaba-model-studio
+title: Alibaba Cloud Model Studio
+docs:
+  site: Alibaba Cloud Documentation Center
+  base_url: https://www.alibabacloud.com/help/en/model-studio/
+  version: current
+fetch_interval_hours: 168
+pages:
+- slug: token-plan-personal-overview
+  url: https://www.alibabacloud.com/help/en/model-studio/token-plan-personal-overview
+- slug: token-plan-overview
+  url: https://www.alibabacloud.com/help/en/model-studio/token-plan-overview
+- slug: claude-code
+  url: https://www.alibabacloud.com/help/en/model-studio/claude-code
+- slug: anthropic-api-messages
+  url: https://www.alibabacloud.com/help/en/model-studio/anthropic-api-messages
+- slug: models
+  url: https://www.alibabacloud.com/help/en/model-studio/models
+last_attempt: '2026-10-05T04:02:02Z'
+last_error: null

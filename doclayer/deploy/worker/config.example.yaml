@@ -1,0 +1,143 @@
+# brain-curator worker configuration — example without secrets.
+#
+# Copy to ~/.config/brain-curator/config.yaml on the worker host (worker1)
+# and adapt. Secrets NEVER live here: the inference API key is read from
+# ~/.config/brain-curator/credentials.env (chmod 600) as
+# CURATOR_INFERENCE_API_KEY=<key>. The values below are an example deployment on a
+# fictional fleet (ws1, app1, gpu1, svc1, worker1, nas1); the file only needs
+# entries you want to change.
+#
+# See doclayer/src/doclayer/curator/config.py for the authoritative list of
+# keys and their (public-safe) defaults.
+
+inference:
+  # The one model endpoint (OpenAI-compatible). This example uses a local
+  # server on gpu1 (llama-swap -> vLLM). A hosted endpoint works the same way:
+  #   url: https://api.example.com/v1
+  #   thinking_budget_field: thinking_budget   # some hosts name it differently from vLLM's thinking_token_budget
+  # with the hosted key as CURATOR_INFERENCE_API_KEY. There is no fallback
+  # provider: if inference is down, jobs preserve progress and report retryable failure.
+  url: http://gpu1:9292/v1
+  model: Qwen/Qwen3-32B
+  # Serving limits as currently known. These cap client requests; never
+  # reconfigure the shared server to meet the client. Verify with a real
+  # probe during deployment (runbook §Live validation) and adjust here.
+  serving_context_tokens: 262144   # gpu1 vLLM max_model_len
+  serving_max_output_tokens: 8192
+  # Per-request targets (prompt includes instructions, page context, evidence).
+  prompt_token_target: 16384
+  output_token_target: 4096
+  timeout_s: 300
+  retries: 2
+  concurrency: 1  # inference requests at once within ONE job; parallel_jobs multiplies it
+  enable_thinking: false  # preserve response budget for structured final JSON
+  # worker1 could set concurrency: 5 (parallel model requests within one job).
+
+# Optional per-stage overrides of any inference key. An absent stage uses
+# `inference` unchanged, except `extraction`, which inherits `curation` (and
+# layers its own keys on top of it). Stages: discovery, planning, curation,
+# verification, extraction.
+# Unknown stage names or keys fail at load. Example (no stage overrides url or
+# api_key_env, so all four use the endpoint above):
+# stages:
+#   discovery:    {model: small-model}     # many short page judgments
+#   planning:     {model: large-model}     # read-only command plans
+#   curation:     {model: large-model}     # extract, draft, edit, review
+#   verification: {model: other-family-model}   # independent family from the writer
+#
+# Extraction on gpu1's local model as background work. Only the extract calls
+# go to gpu1; every other stage stays on the main endpoint.
+#   extraction:
+#     url: http://gpu1:9292/v1
+#     model: Qwen/Qwen3-32B
+#     api_key_env: GPU1_API_KEY                   # in credentials.env
+#     thinking_budget_field: thinking_token_budget  # vLLM's key (hosted uses thinking_budget)
+#     serving_context_tokens: 262144
+#     request_priority: 100        # sent as top-level `priority`; vLLM runs lower values
+#                                  # first, so 100 is behind every default (0) request.
+#                                  # Absent = key not sent.
+#     idle_metrics_url: http://gpu1:9292/upstream/Qwen/Qwen3-32B/metrics
+#                                  # The /upstream/<model>/ segment must equal this block's
+#                                  # model (checked at load). llama-swap's /running (same
+#                                  # host): another model loaded, or this one starting, makes
+#                                  # the gate wait without touching /upstream (a poll there
+#                                  # could unload another model); nothing loaded proceeds
+#                                  # (the request cold-loads it). Then each
+#                                  # request waits until that vLLM reports
+#                                  # num_requests_waiting == 0 and no running request
+#                                  # beyond this process's own in-flight ones. The metrics
+#                                  # use the stage's bearer key; an unreachable endpoint
+#                                  # (no connection) is waited out, an unusable answer
+#                                  # lets requests through (each logged once per
+#                                  # client). Waiting has no timeout, is recorded
+#                                  # as usage.idle_wait_seconds and is not active time.
+#     idle_poll_s: 15              # seconds between idle checks while busy
+
+limits:
+  max_sources: 50                # distinct sources per job (submitted + discovered)
+  max_source_bytes: 67108864     # 64 MiB per source, enforced while streaming
+  max_job_bytes: 536870912       # 512 MiB total transfer per job
+  max_active_seconds: 7200       # 2 h active processing (excludes queue/restart)
+  max_model_calls: 200           # includes validation and repair calls
+  fetch_concurrency: 4
+  parallel_jobs: 1               # jobs the worker runs at once; publication stays one at a time
+                                 # (worker1: 5; a job that crashes ends retryable, "worker crash: ...")
+  transient_retries: 2
+  max_repair_passes: 2           # per affected page/group
+
+paths:
+  brain_checkout: ~/git/brain-curator
+  jobs: ~/.local/share/brain-curator/jobs
+  worktrees: ~/.local/share/brain-curator/worktrees
+  cache: ~/.cache/brain-curator
+
+publish:
+  remote: origin
+  base_branch: main
+  branch_prefix: curator/
+  # Canonical destinations a curator job may write. Librarian-owned files
+  # (index.md, log.md) are always denied.
+  allowed_prefixes: [wiki/, infra/]
+  denied_names: [index.md, log.md]
+  forgejo_url: https://git.example.org
+  # Reuses the existing fetcher token file; override only if the worker gets
+  # its own credential. chmod 600, never committed.
+  forgejo_token_file: ~/.config/doclayer/forgejo-token
+  # Opt-in: lets a single-maintainer repo land curator PRs with the admin
+  # merge override, since Forgejo forbids self-approval.
+  force_merge: true
+  author_name: brain-curator
+  author_email: brain-curator@git.example.org
+
+ssh:
+  # Used by workstation CLI/MCP clients to reach this host's ops entry point.
+  host: worker1
+  remote_command: ~/git/brain-curator/doclayer/.venv/bin/brain-curator ops
+  connect_timeout_s: 15
+  command_timeout_s: 120
+
+cache:
+  max_bytes: 2147483648   # 2 GiB global cache cap
+  retention_days: 7       # expire a job's cache 7 days after its last activity
+
+retention:
+  finished_job_days: 90   # drafts/state/summaries of finished jobs; corrections and
+                          # unresolved jobs are kept indefinitely
+
+# Gap worker pacing.
+gap_worker:
+  cycle_budget_s: null           # null = no soft cycle budget (run until the queue is empty);
+                                 # set seconds to bound a cycle. The unit's TimeoutStartSec=8h
+                                 # is only a hang guard.
+  max_active_jobs: 1             # gaps the dispatcher keeps in curation at once (worker1: 5)
+
+# Automatic private pages (gap worker): allowlisted read-only evidence -> private single-pass job.
+private_writer:
+  hosts: [ws1, app1, gpu1, svc1, worker1, nas1]
+  host_notes:
+    ws1: "local workstation (Ubuntu desktop); 'the workstation' and 'locally' mean ws1"
+    app1: "application host: Docker stacks and a local model endpoint"
+    gpu1: "GPU inference host: serves the local model (llama-swap -> vLLM, port 9292)"
+    svc1: "services host: Forgejo and other service containers"
+    worker1: "worker host: brain curator and gap worker (runs commands locally)"
+    nas1: "storage host"

@@ -1,0 +1,39 @@
+# Versioned routing evaluation fixture.
+#
+# Spanning: local/public/mixed questions, explicit lookups, unknown libraries,
+# editing prompts, code questions, followups, multi-subject questions and
+# ambiguous aliases. "false_trigger" cases are the real false triggers observed
+# in the 2026-10-03 evaluation of the standing-instruction era;
+# "covered" cases are genuine covered lookups that must still route.
+#
+# expected_nudge: whether the hook may inject a suggestion (route.wants_lookup
+# plus a subject or an uncovered candidate).
+schema_version: 1
+subjects_fixture:
+  # the test builds the catalog with these subjects
+  - {slug: alibaba-model-studio, kind: product, aliases: ["model studio", "alibaba model studio"]}
+  - {slug: gpt-6-astra, kind: model, aliases: ["gpt 6 astra"]}
+  - {slug: openai-responses-api, kind: product, aliases: ["responses api"]}
+  - {slug: my-token-plan, kind: account, aliases: ["token plan"]}
+  - {slug: litellm-hub, kind: service, aliases: ["litellm"]}
+  - {slug: worker1, kind: host, aliases: []}
+cases:
+  - {id: local-running, prompt: "What is running on worker1?", expected_intent: local_environment, expected_subjects: [worker1], expected_nudge: true}
+  - {id: local-live-check, prompt: "which model is deployed on worker1 right now?", expected_intent: local_environment, expected_subjects: [worker1], expected_nudge: true}
+  - {id: public-usage, prompt: "How do I use GPT-6 Astra?", expected_intent: public_docs, expected_subjects: [gpt-6-astra], expected_nudge: true}
+  - {id: public-models, prompt: "which models on model studio?", expected_intent: public_docs, expected_subjects: [alibaba-model-studio], expected_nudge: true}
+  - {id: public-uncovered, prompt: "Show me docs for obscure-library-xyz", expected_intent: public_docs, expected_subjects: [], gap_candidate: "obscure library xyz", expected_nudge: true}
+  - {id: mixed-fit, prompt: "How does this API fit our deployment?", expected_intent: local_environment, expected_subjects: [], expected_nudge: false}
+  - {id: mixed-subjects, prompt: "How does the responses api compare with gpt-6 astra for our deployment?", expected_intent: local_environment, expected_subjects: [openai-responses-api, gpt-6-astra], expected_nudge: true}
+  - {id: code-passed, prompt: "Where does this argument get passed?", expected_intent: code_task, expected_subjects: [], expected_nudge: false}
+  - {id: code-pin, prompt: "What version should I pin in requirements.txt?", expected_intent: ambiguous, expected_subjects: [], expected_nudge: false}
+  - {id: task-prompting, prompt: "Please update the prompting examples", expected_intent: code_task, expected_subjects: [], expected_nudge: false}
+  - {id: task-with-product, prompt: "update the openai responses api tests", expected_intent: code_task, expected_subjects: [openai-responses-api], expected_nudge: false}
+  - {id: followup, prompt: "Can you explain your previous answer?", expected_intent: ambiguous, expected_subjects: [], expected_nudge: false}
+  - {id: explicit, prompt: "what is a frobnicator?", expected_intent: explicit_brain, explicit: true, expected_subjects: [], expected_nudge: false}
+  - {id: fragment-tools, prompt: "the tools need better naming", expected_intent: ambiguous, expected_subjects: [], expected_nudge: false}
+  - {id: fragment-prompting, prompt: "prompting got worse after the change", expected_intent: ambiguous, expected_subjects: [], expected_nudge: false}
+  - {id: fragment-performance, prompt: "performance is fine now", expected_intent: ambiguous, expected_subjects: [], expected_nudge: false}
+  - {id: ops-task, prompt: "restart the nginx container on worker1", expected_intent: code_task, expected_subjects: [worker1], expected_nudge: false}
+  - {id: covered-account, prompt: "what models can I use on my token plan?", expected_intent: local_environment, expected_subjects: [my-token-plan], expected_nudge: true}
+  - {id: covered-service, prompt: "how do I configure litellm retries?", expected_intent: mixed_local_public, expected_subjects: [litellm-hub], expected_nudge: true}
