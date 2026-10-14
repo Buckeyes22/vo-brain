@@ -19,6 +19,17 @@ os.environ.setdefault("DOC_LAYER_CATALOG_CACHE_DIR", os.path.join(_SESSION_TMP, 
 os.environ.setdefault("DOC_LAYER_NEGATIVE_CACHE", os.path.join(_SESSION_TMP, "session-negative-cache.json"))
 os.environ.setdefault("DOC_LAYER_GAPS_DIR", os.path.join(_SESSION_TMP, "session-gaps"))
 os.environ["DOC_LAYER_GAP_OWNER"] = "local"
+# The machine's own ~/.config/brain-curator/config.yaml must never steer a test:
+# load_config() reads this path first, and a missing file means the defaults.
+# Tests that need a config pass a path or set the variable themselves.
+os.environ["BRAIN_CURATOR_CONFIG"] = os.path.join(_SESSION_TMP, "no-curator-config.yaml")
+# No test may read or write this user's real home (~/.config, ~/.cache, ...):
+# HOME and the XDG roots point into the session temp directory.
+_TEST_HOME = os.path.join(_SESSION_TMP, "home")
+os.makedirs(_TEST_HOME, exist_ok=True)
+os.environ["HOME"] = _TEST_HOME
+for _xdg in ("XDG_CONFIG_HOME", "XDG_CACHE_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"):
+    os.environ[_xdg] = os.path.join(_TEST_HOME, _xdg.lower())
 
 import pytest  # noqa: E402
 
